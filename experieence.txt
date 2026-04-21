@@ -1,0 +1,71 @@
+alors le prmeier model teté est le forest la dififculté c'etait le cas d'avoir plusieur y par segment de radio donc il afait l'adapté  car forest marche avvec un seul y de base nn? 
+Chaque label est traité indépendamment
+→ probabilité par label
+→ moyenne sur les arbres
+→ seuil
+
+
+Afin d’assurer la cohérence entre les données d’entraînement et les conditions de test, tous les fichiers audio ont été segmentés en fenêtres de 5 secondes correspondant à l’unité de prédiction.
+
+on a testé d'abord  les souds des animeau individuelmment puis on a conctatné aec les sons melangé avce les autres animuaux et si un sons faismoi de 5 s on ajouté un padding pour ...
+
+
+au lieu que le model triche car on tilise un split  dans imgainge le model apprend sur le vent et bruit de fond ect et et doc j'ai utilise le truc de sicket learn ou pasque ertian morceau passe en train ou test c'est sois tt le fichier passe en test ou train et donc on aura le vrai score si le model a a prsi de connaitre un animal ou juste il avant triché en apprennat le bruit du fond on avait repqrquéé que le score a baissé un peu donc on a ajouté j'ai donc fait du Feature Engineering en ajoutant le Spectral Centroid..." et le score a augmenté on avait 0.76 puis 0.8333
+“L’utilisation d’un GroupShuffleSplit garantit l’indépendance entre les fichiers audio, mais peut entraîner une absence de certaines classes dans les ensembles d’entraînement ou de test.”
+
+on utilisé roc et dire prk c'est mieux et importantn ici qui nous dis si les proba pour y test sont bon ou pas 
+
+
+Certaines classes étant absentes du jeu de test, le ROC-AUC ne peut pas être calculé. Nous avons donc filtré ces classes lors de l’évaluation. car manque de donné Y_test [[1 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0]] et si on regarde colonne tpar collone on voit la deuxiemem colone jamais presente donc si on lui donne un x avec y comme classe clonne 2 il a pas ete entrainé pr donc on a dit augment max iter qui perme t nombre de file audio traiter
+“En raison du déséquilibre des classes, certaines espèces sont absentes du jeu de test. Plutôt que de forcer leur présence, nous avons choisi de les exclure du calcul du ROC-AUC.”
+
+
+MaxIter = 400 audio 
+Features	AUC   
+MFCC	AUC: 0.798503583605885
+
++ delta	AUC: 0.8048852281663812
++ delta^2  AUC: 0.8028807668993042
+
++ full	Score : 0.8073740179867404 en ajoutant le spectral ca s'est amelioré
+
+
+✔️ Pourquoi MFCC ?
+
+→ représentent le son
+
+✔️ Pourquoi delta ?
+
+→ dynamique temporelle
+
+✔️ Pourquoi certaines classes échouent ?
+
+→ classes rares
+
+✔️ Pourquoi AUC ?
+
+→ mieux que accuracy
+
+
+
+une fois les feeauture decidé on essaie d'obtimiser forest avec n estimator = 100 on obtient AUC: 0.8029482384553747
+pas ouf 
+avec 250 on obtient  0.8073740179867404 puis avec 400 on obtient AUC: 0.811406608798104
+que je pesne la meilleur decision entre perf et accuracy
+aussi pour gargne en tempson decider de sauvegarder les feature vu que ils change pas et c'esrt les meme audio donc on a pas fairebeacuoup  d'explortation puisque c'etait plusrapide 
+
+
+
+# apres genre pour deploiement tu lui donne genre le path du fichier audio et il te dirtiles a,imeai dedans à regler
+mais genre tu capture en video du genre  c'est des audio aleatoire tu telecharge  et tu fais ecouter en vide tu mets lepath puis c bon
