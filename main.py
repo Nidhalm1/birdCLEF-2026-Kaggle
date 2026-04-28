@@ -9,7 +9,7 @@ import time
 import os
 
 
-OUTPUT_BASE_PATH = "/kaggle/working/"
+OUTPUT_BASE_PATH = "outputs/" # "/kaggle/working/"
 
 def ensure_output_dir(rest_path):
     os.makedirs(OUTPUT_BASE_PATH + rest_path, exist_ok=True)
@@ -40,14 +40,14 @@ def test_model(name):
     df = df.sort_values(by="auc_score", ascending=False)
 
     # Save CSV
-    ensure_output_dir(f"{OUTPUT_BASE_PATH}results/")
+    ensure_output_dir("results/")
     result_file_path = f"{OUTPUT_BASE_PATH}results/{name}_results.csv"
     df.to_csv(result_file_path, index=False)
 
     print(f"Results saved to {result_file_path}")
 
     # Save model
-    ensure_output_dir(f"{OUTPUT_BASE_PATH}models/")
+    ensure_output_dir("models/")
     model_path = f"{OUTPUT_BASE_PATH}models/{name}_best_model.pkl"
     joblib.dump(best_model, model_path)
 
