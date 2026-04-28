@@ -52,6 +52,8 @@ def test_model(name):
     model_path = f"{OUTPUT_BASE_PATH}models/{name}_best_model.pkl"
     joblib.dump(best_model, model_path)
 
+    print(f"Best model saved to {model_path}")
+
 
 
 def main():
