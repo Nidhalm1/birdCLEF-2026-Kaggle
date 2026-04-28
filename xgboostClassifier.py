@@ -86,6 +86,7 @@ def xboost_model_tests():
 
     results = []
 
+    best_model = None
     best_score = 0
     best_params = {}
 
@@ -138,9 +139,10 @@ def xboost_model_tests():
                         if score > best_score:
                             best_score = score
                             best_params = run_result
+                            best_model = model
                         print(f"Current best score: {best_score} with params: {best_params}")
 
     print(f"\nBest score: {best_score}")
     print(f"Best params: {best_params}")
 
-    return best_params, best_score, results
+    return best_model, best_params, best_score, results
