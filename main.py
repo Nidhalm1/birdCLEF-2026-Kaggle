@@ -21,10 +21,10 @@ def test_model(name):
         best_model, best_params, best_score = logistic_regression_model_tests()
     elif name == "svm":
         best_model, best_params, best_score = svm_model_tests()
-    elif name == "xgboost":
-        best_model, best_params, best_score = xboost_model_tests()
     elif name == "random_forest":
         best_model, best_params, best_score = randomForest_model_tests()
+    elif name == "xgboost":
+        best_model, best_params, best_score = xboost_model_tests()
     else:
         print(f"Unknown model name: {name}")
         return None, None, None
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     test_start = time.time()
     test_end = time.time()
     times = []
-    model_names = ["logistic_regression", "svm", "xgboost", "random_forest"]
+    model_names = ["svm", "random_forest", "xgboost"] # ["logistic_regression", "svm", "random_forest", "xgboost"]
 
     for model_name in model_names:
         print(f"\n\n=== Testing {model_name.replace('_', ' ').title()} ===")
