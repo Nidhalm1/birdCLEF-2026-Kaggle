@@ -18,17 +18,17 @@ def ensure_output_dir(rest_path):
 def test_model(name):
     best_model, best_params, best_score, results = None, None, None, None
     if name == "logistic_regression":
-        best_model, best_params, best_score = logistic_regression_model_tests()
+        best_model, best_params, best_score, results = logistic_regression_model_tests()
     elif name == "svm":
-        best_model, best_params, best_score = svm_model_tests()
+        best_model, best_params, best_score, results = svm_model_tests()
     elif name == "random_forest":
-        best_model, best_params, best_score = randomForest_model_tests()
+        best_model, best_params, best_score, results = randomForest_model_tests()
     elif name == "xgboost":
-        best_model, best_params, best_score = xboost_model_tests()
+        best_model, best_params, best_score, results = xboost_model_tests()
     else:
         print(f"Unknown model name: {name}")
-        return None, None, None
-    
+        return None, None, None, None
+
     print(f"Best {name.capitalize()} Parameters:", best_params)
     print(f"Best {name.capitalize()} Score:", best_score)
 
@@ -50,8 +50,6 @@ def test_model(name):
     ensure_output_dir(f"{OUTPUT_BASE_PATH}models/")
     model_path = f"{OUTPUT_BASE_PATH}models/{name}_best_model.pkl"
     joblib.dump(best_model, model_path)
-
-    return best_model, best_params, best_score
 
 
 
