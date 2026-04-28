@@ -8,10 +8,10 @@ import time
 
 SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 
-def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale"):
+def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale", max_iter=1000):
 
     print("\n/// SVM Model ///")
-    print(f"Parameters: C={C}, gamma={gamma}")
+    print(f"Parameters: C={C}, gamma={gamma}, max_iter={max_iter}")
 
     if X_array is None:
         X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
@@ -35,7 +35,7 @@ def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale"):
     X_test = scaler.transform(X_test)
 
     model = OneVsRestClassifier(
-        SVC(C=C, gamma=gamma, probability=True, max_iter=5000),
+        SVC(C=C, gamma=gamma, probability=True, max_iter=max_iter),
         n_jobs=-1
     )
 
@@ -66,12 +66,13 @@ def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale"):
 
 
 def svm_model_tests():
-    C_values = [0.1, 1.0, 10.0]
+    C_values = [0.001, 0.01, 0.1, 1.0, 10.0]
     gamma_values = ["scale", 0.01, 0.1]
+    max_iter_values = [500, 1000, 5000, 10000]
 
-    total_combinations = len(C_values) * len(gamma_values)
+    total_combinations = len(C_values) * len(gamma_values) * len(max_iter_values)
     print("/// SVM Hyperparameter Tests ///")
-    print(f"Testing combinations of: C={C_values}, gamma={gamma_values}")
+    print(f"Testing combinations of: C={C_values}, gamma={gamma_values}, max_iter={max_iter_values}")
     print(f"Total combinations to test: {total_combinations}")
     counter = 0
 
@@ -90,39 +91,42 @@ def svm_model_tests():
 
     for C in C_values:
         for gamma in gamma_values:
-            counter += 1
-            print("\n\n----------------------------------------")
-            print(f"Testing combination {counter} of {total_combinations}")
-            print(f"Testing: C={C}, gamma={gamma}")
+            for max_iter in max_iter_values:
+                counter += 1
+                print("\n\n----------------------------------------")
+                print(f"Testing combination {counter} of {total_combinations}")
+                print(f"Testing: C={C}, gamma={gamma}, max_iter={max_iter}")
 
-            start_time = time.time()
+                start_time = time.time()
 
-            model, score, _, _ = svm_model(
-                X_array=X_array,
-                Y_encoded=Y_encoded,
-                groups=groups,
-                C=C,
-                gamma=gamma
-            )
+                model, score, _, _ = svm_model(
+                    X_array=X_array,
+                    Y_encoded=Y_encoded,
+                    groups=groups,
+                    C=C,
+                    gamma=gamma,
+                    max_iter=max_iter
+                )
 
-            duration = time.time() - start_time
+                duration = time.time() - start_time
 
-            print(f"Score: {score} | Time: {duration:.2f}s")
+                print(f"Score: {score} | Time: {duration:.2f}s")
 
-            run_result = {
-                "C": C,
-                "gamma": gamma,
-                "auc_score": score,
-                "train_time_sec": duration
-            }
+                run_result = {
+                    "C": C,
+                    "gamma": gamma,
+                    "max_iter": max_iter,
+                    "auc_score": score,
+                    "train_time_sec": duration
+                }
 
-            results.append(run_result)
+                results.append(run_result)
 
-            if score > best_score:
-                best_score = score
-                best_params = run_result
-                best_model = model
-            print(f"Current best score: {best_score} with params: {best_params}")
+                if score > best_score:
+                    best_score = score
+                    best_params = run_result
+                    best_model = model
+                print(f"Current best score: {best_score} with params: {best_params}")
 
     print(f"\nBest score: {best_score}")
     print(f"Best params: {best_params}")

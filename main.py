@@ -3,6 +3,7 @@ from svm import svm_model_tests
 from randomForestClassifier import randomForest_model_tests
 from xgboostClassifier import xgboost_model, xboost_model_tests
 from audioCharge import *
+from visualize import plot_results
 
 import joblib
 import time
@@ -73,13 +74,12 @@ def main():
 
     print("Score :", score)
 
-
-if __name__ == "__main__":
+def test_models(model_names):
     start = time.time()
     test_start = None
     test_end = None
     times = []
-    model_names = ["svm", "random_forest", "xgboost"] # ["logistic_regression", "svm", "random_forest", "xgboost"]
+    # model_names = ["logistic_regression", "svm"]# ["svm", "random_forest", "xgboost"] # ["logistic_regression", "svm", "random_forest", "xgboost"]
 
     for model_name in model_names:
         print(f"\n\n=== Testing {model_name.replace('_', ' ').title()} ===")
@@ -95,3 +95,9 @@ if __name__ == "__main__":
     print("Individual model times:")
     for model_name, model_time in zip(model_names, times):
         print(f"{model_name.replace('_', ' ').title()}: {model_time:.2f}s")
+
+if __name__ == "__main__":
+    test_models(["logistic_regression", "svm", "random_forest", "xgboost"])
+    print("\n\n=== Generating Plots ===")
+    plot_results()
+    

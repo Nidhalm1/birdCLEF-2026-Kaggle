@@ -77,7 +77,7 @@ def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, ma
 
 
 def randomForest_model_tests():
-    n_estimators = [100, 300, 600, 800]
+    n_estimators = [100, 300, 600, 800, 1000]
     max_depth = [4, 6, 8, 10]
     class_weight = ["balanced"]
     max_features = ["sqrt", "log2"]

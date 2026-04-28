@@ -8,10 +8,10 @@ from sklearn.preprocessing import StandardScaler
 
 SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 
-def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
+def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0, max_iter=1000):
 
     print("\n/// Logistic Regression Model ///")
-    print(f"Parameters: C={C}")
+    print(f"Parameters: C={C}, max_iter={max_iter}")
 
     if X_array is None:
         X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
@@ -29,7 +29,22 @@ def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
     X_train, X_test = X_array[train_idx], X_array[test_idx]
     Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
 
-    # Scaling (IMPORTANT)
+
+    valid_labels = []
+    for i in range(Y_train.shape[1]):
+        if len(np.unique(Y_train[:, i])) > 1:
+            valid_labels.append(i)
+
+    if len(valid_labels) == 0:
+        print("No valid labels found (all single-class).")
+        return None, 0.5, X_test, Y_test
+
+    Y_train_filtered = Y_train[:, valid_labels]
+    Y_test_filtered = Y_test[:, valid_labels]
+
+    print(f"Using {len(valid_labels)}/{Y_train.shape[1]} valid labels")
+
+    # Scaling
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
@@ -37,23 +52,24 @@ def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
     model = MultiOutputClassifier(
         LogisticRegression(
             C=C,
-            max_iter=1000,
-            n_jobs=-1
+            max_iter=max_iter
         ),
         n_jobs=-1
     )
 
     print("Training Logistic Regression model...")
-    model.fit(X_train, Y_train)
+    model.fit(X_train, Y_train_filtered)
 
     # Probabilities
     Y_pred_proba_list = model.predict_proba(X_test)
 
-    # Same format as RF/XGB
-    Y_pred_proba = np.stack([
+    Y_pred_proba_filtered = np.stack([
         proba[:, 1] if proba.shape[1] > 1 else np.zeros(proba.shape[0])
         for proba in Y_pred_proba_list
     ], axis=1)
+
+    Y_pred_proba = np.zeros((X_test.shape[0], Y_train.shape[1]))
+    Y_pred_proba[:, valid_labels] = Y_pred_proba_filtered
 
     # AUC
     auc_scores = []
@@ -70,11 +86,13 @@ def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
 
 
 def logistic_regression_model_tests():
-    C_values = [0.01, 0.1, 1.0, 10.0]
+    C_values = [0.001, 0.01, 0.1, 1.0, 10.0]
+    max_iter_values = [500, 1000, 5000, 10000]
 
-    total_combinations = len(C_values)
+    total_combinations = len(C_values) * len(max_iter_values)
     print("/// Logistic Regression Hyperparameter Tests ///")
     print(f"Testing C values: {C_values}")
+    print(f"Testing max_iter values: {max_iter_values}")
     print(f"Total combinations: {total_combinations}")
 
     results = []
@@ -87,34 +105,37 @@ def logistic_regression_model_tests():
     groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for i, C in enumerate(C_values, 1):
-        print("\n----------------------------------------")
-        print(f"Test {i}/{total_combinations} | C={C}")
+        for j, max_iter in enumerate(max_iter_values, 1):
+            print("\n----------------------------------------")
+            print(f"Test {i}/{total_combinations} | C={C}, max_iter={max_iter}")
 
-        start_time = time.time()
+            start_time = time.time()
 
-        model, score, _, _ = logistic_regression_model(
-            X_array=X_array,
-            Y_encoded=Y_encoded,
-            groups=groups,
-            C=C
-        )
+            model, score, _, _ = logistic_regression_model(
+                X_array=X_array,
+                Y_encoded=Y_encoded,
+                groups=groups,
+                C=C,
+                max_iter=max_iter
+            )
 
-        duration = time.time() - start_time
+            duration = time.time() - start_time
 
-        print(f"Score: {score} | Time: {duration:.2f}s")
+            print(f"Score: {score} | Time: {duration:.2f}s")
 
-        run_result = {
-            "C": C,
-            "auc_score": score,
-            "train_time_sec": duration
-        }
+            run_result = {
+                "C": C,
+                "max_iter": max_iter,
+                "auc_score": score,
+                "train_time_sec": duration
+            }
 
-        results.append(run_result)
+            results.append(run_result)
 
-        if score > best_score:
-            best_score = score
-            best_params = run_result
-            best_model = model
+            if score > best_score:
+                best_score = score
+                best_params = run_result
+                best_model = model
 
     print(f"\nBest score: {best_score}")
     print(f"Best params: {best_params}")

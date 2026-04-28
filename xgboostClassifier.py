@@ -73,9 +73,9 @@ def xgboost_model(X_array=None, Y_encoded=None, groups=None, n_estimators=600, m
 
 
 def xboost_model_tests():
-    n_estimators = [100, 300, 600]
-    max_depth = [4, 6, 8]
-    learning_rate = [0.01, 0.05]
+    n_estimators = [100, 300, 600, 800, 1000]
+    max_depth = [4, 6, 8, 10]
+    learning_rate = [0.001, 0.01, 0.05]
     subsample = [0.8, 1.0]
     colsample_bytree = [0.8, 1.0]
 
