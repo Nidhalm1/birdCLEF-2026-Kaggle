@@ -7,6 +7,7 @@ from audioCharge import *
 import joblib
 import time
 import os
+import pandas as pd
 
 
 OUTPUT_BASE_PATH = "outputs/" # "/kaggle/working/"
@@ -73,8 +74,8 @@ def main():
 
 if __name__ == "__main__":
     start = time.time()
-    test_start = time.time()
-    test_end = time.time()
+    test_start = None
+    test_end = None
     times = []
     model_names = ["svm", "random_forest", "xgboost"] # ["logistic_regression", "svm", "random_forest", "xgboost"]
 
