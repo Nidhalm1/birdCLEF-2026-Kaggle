@@ -5,18 +5,19 @@ from sklearn.multioutput import MultiOutputClassifier
 from xgboost import XGBClassifier
 import time
 
+SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 
 def xgboost_model(X_array=None, Y_encoded=None, groups=None, n_estimators=600, max_depth=6, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8):
     print("\n/// XGBoost Model ///")
     print(f"Parameters: n_estimators={n_estimators}, max_depth={max_depth}, learning_rate={learning_rate}, subsample={subsample}, colsample_bytree={colsample_bytree}")
     if X_array is None:
-        X_array = np.load("saved/X.npy", allow_pickle=True)
+        X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
         print(f"Loaded X_array shape: {X_array.shape}")
     if Y_encoded is None:
-        Y_encoded = np.load("saved/Y_encoded.npy", allow_pickle=True)
+        Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
         print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
     if groups is None:
-        groups = np.load("saved/groups.npy", allow_pickle=True)
+        groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
         print(f"Loaded groups shape: {groups.shape}")
 
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
@@ -93,9 +94,9 @@ def xboost_model_tests():
     print("Starting XGBoost hyperparameter tests...")
     print("loading data...")
 
-    X_array = np.load("saved/X.npy", allow_pickle=True)
-    Y_encoded = np.load("saved/Y_encoded.npy", allow_pickle=True)
-    groups = np.load("saved/groups.npy", allow_pickle=True)
+    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
+    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
+    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for n in n_estimators:
         for d in max_depth:

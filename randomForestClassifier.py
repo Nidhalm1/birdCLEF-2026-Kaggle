@@ -1,4 +1,3 @@
-from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
@@ -6,9 +5,7 @@ import numpy as np
 import time
 import pandas as pd
 
-SAVED_BASE_PATH = "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
-OUTPUT_BASE_PATH = "/kaggle/working/"
-
+SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 
 def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, max_depth=6, class_weight="balanced", max_features="sqrt", min_samples_split=2):
     print("\n/// RandomForest Model ///")

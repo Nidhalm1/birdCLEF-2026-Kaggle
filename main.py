@@ -2,10 +2,10 @@ from logisticRegression import logistic_regression_model_tests
 from svm import svm_model_tests
 from randomForestClassifier import randomForest_model_tests
 from xgboostClassifier import xgboost_model, xboost_model_tests
-from svm import train_model2
 from audioCharge import *
 
 import joblib
+import time
 import os
 
 
@@ -13,110 +13,6 @@ OUTPUT_BASE_PATH = "/kaggle/working/"
 
 def ensure_output_dir(rest_path):
     os.makedirs(OUTPUT_BASE_PATH + rest_path, exist_ok=True)
-
-
-def test_logistic_regression(filename="logistic_regression_results.csv"):
-    best_model, best_params, best_score, results = logistic_regression_model_tests()
-    print("Best Logistic Regression Parameters:", best_params)
-    print("Best Logistic Regression Score:", best_score)
-
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
-
-    # Sort by score (best first)
-    df = df.sort_values(by="auc_score", ascending=False)
-
-    # Save CSV
-    ensure_output_dir("results/")
-    df.to_csv(OUTPUT_BASE_PATH + "results/" + filename, index=False)
-
-    print(f"Results saved to {filename}")
-
-    # Save model
-    ensure_output_dir("models/")
-    model_path = OUTPUT_BASE_PATH + "models/logistic_regression_best_model.pkl"
-    joblib.dump(best_model, model_path)
-
-    return best_model, best_params, best_score
-
-def test_svm(filename="svm_results.csv"):
-    best_model, best_params, best_score, results = svm_model_tests()
-    print("Best SVM Parameters:", best_params)
-    print("Best SVM Score:", best_score)
-
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
-
-    # Sort by score (best first)
-    df = df.sort_values(by="auc_score", ascending=False)
-
-    # Save CSV
-    ensure_output_dir("results/")
-    df.to_csv(OUTPUT_BASE_PATH + "results/" + filename, index=False)
-
-    print(f"Results saved to {filename}")
-
-    # Save model
-    ensure_output_dir("models/")
-    model_path = OUTPUT_BASE_PATH + "models/svm_best_model.pkl"
-    joblib.dump(best_model, model_path)
-
-    return best_model, best_params, best_score
-
-
-def test_xboost(filename="xgboost_results.csv"):
-    best_model, best_params, best_score, results = xboost_model_tests()
-    print("Best XGBoost Parameters:", best_params)
-    print("Best XGBoost Score:", best_score)
-
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
-
-    # Sort by score (best first)
-    df = df.sort_values(by="auc_score", ascending=False)
-
-    # Save CSV
-    ensure_output_dir("results/")
-    df.to_csv(OUTPUT_BASE_PATH + "results/" + filename, index=False)
-
-    print(f"Results saved to {filename}")
-
-    ensure_output_dir("models/")
-    model_path = OUTPUT_BASE_PATH + "models/xgboost_best_model.pkl"
-    joblib.dump(best_model, model_path)
-
-    return best_model, best_params, best_score
-
-
-
-def test_random_forest(filename="random_forest_results.csv"):
-    best_model, best_params, best_score, results = randomForest_model_tests()
-    print("Best RandomForest Parameters:", best_params)
-    print("Best RandomForest Score:", best_score)
-
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
-
-    # Sort by score (best first)
-    df = df.sort_values(by="auc_score", ascending=False)
-
-    # Save CSV
-    ensure_output_dir("results/")
-    df.to_csv(OUTPUT_BASE_PATH + "results/" + filename, index=False)
-
-    print(f"Results saved to {filename}")
-
-    # Save model
-    ensure_output_dir("models/")
-    model_path = OUTPUT_BASE_PATH + "models/random_forest_best_model.pkl"
-    joblib.dump(best_model, model_path)
-
-    return best_model, best_params, best_score
-
 
 
 def test_model(name):
@@ -144,14 +40,14 @@ def test_model(name):
     df = df.sort_values(by="auc_score", ascending=False)
 
     # Save CSV
-    ensure_output_dir("results/")
+    ensure_output_dir(f"{OUTPUT_BASE_PATH}results/")
     result_file_path = f"{OUTPUT_BASE_PATH}results/{name}_results.csv"
     df.to_csv(result_file_path, index=False)
 
     print(f"Results saved to {result_file_path}")
 
     # Save model
-    ensure_output_dir("models/")
+    ensure_output_dir(f"{OUTPUT_BASE_PATH}models/")
     model_path = f"{OUTPUT_BASE_PATH}models/{name}_best_model.pkl"
     joblib.dump(best_model, model_path)
 
@@ -178,6 +74,23 @@ def main():
 
 
 if __name__ == "__main__":
-    for model_name in ["logistic_regression", "svm", "xgboost", "random_forest"]:
+    start = time.time()
+    test_start = time.time()
+    test_end = time.time()
+    times = []
+    model_names = ["logistic_regression", "svm", "xgboost", "random_forest"]
+
+    for model_name in model_names:
         print(f"\n\n=== Testing {model_name.replace('_', ' ').title()} ===")
+        test_start = time.time()
         test_model(model_name)
+        test_end = time.time()
+        model_time = test_end - test_start
+        print(f"Time taken for {model_name}: {model_time:.2f}s")
+        times.append(model_time)
+    
+    end = time.time()
+    print(f"Total time taken: {end - start:.2f}s")
+    print("Individual model times:")
+    for model_name, model_time in zip(model_names, times):
+        print(f"{model_name.replace('_', ' ').title()}: {model_time:.2f}s")

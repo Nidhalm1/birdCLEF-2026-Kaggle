@@ -6,6 +6,7 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 
+SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 
 def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
 
@@ -13,13 +14,13 @@ def logistic_regression_model(X_array=None, Y_encoded=None, groups=None, C=1.0):
     print(f"Parameters: C={C}")
 
     if X_array is None:
-        X_array = np.load("saved/X.npy", allow_pickle=True)
+        X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
         print(f"Loaded X_array shape: {X_array.shape}")
     if Y_encoded is None:
-        Y_encoded = np.load("saved/Y_encoded.npy", allow_pickle=True)
+        Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
         print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
     if groups is None:
-        groups = np.load("saved/groups.npy", allow_pickle=True)
+        groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
         print(f"Loaded groups shape: {groups.shape}")
 
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
@@ -81,9 +82,9 @@ def logistic_regression_model_tests():
     best_score = 0
     best_params = {}
 
-    X_array = np.load("saved/X.npy", allow_pickle=True)
-    Y_encoded = np.load("saved/Y_encoded.npy", allow_pickle=True)
-    groups = np.load("saved/groups.npy", allow_pickle=True)
+    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
+    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
+    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for i, C in enumerate(C_values, 1):
         print("\n----------------------------------------")
