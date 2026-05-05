@@ -10,24 +10,28 @@ SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/sa
 def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, max_depth=6, class_weight="balanced", max_features="sqrt", min_samples_split=2):
     print("\n/// RandomForest Model ///")
     print(f"Parameters: n_estimators={n_estimators}, max_depth={max_depth}, class_weight={class_weight}, max_features={max_features}, min_samples_split={min_samples_split}")
-    if X_array is None:
+    
+    array_encoded_group_exists = X_array and not None or Y_encoded and not None or groups and not None
+    splits_exist = X_train and not None or X_test and not None or Y_train and not None or Y_test and not None
+
+    if (array_encoded_group_exists) and not(splits_exist):
         X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
         print(f"Loaded X_array shape: {X_array.shape}")
-    if Y_encoded is None:
+
         Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
         print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
-    if groups is None:
+
         groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
         print(f"Loaded groups shape: {groups.shape}")
 
-    # Garder seulement les 26 premiers éléments de chaque feature
-    #X_array = np.array([x[] for x in X_array])
-    
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-    train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
+        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+        train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
 
-    X_train, X_test = X_array[train_idx], X_array[test_idx]
-    Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
+        X_train, X_test = X_array[train_idx], X_array[test_idx]
+        Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
+    else:
+        print("Either the data or the split data should be given")
+        raise ValueError
     
 
     model = RandomForestClassifier(
@@ -66,8 +70,8 @@ def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, ma
         auc_score = np.mean(auc_scores)
     else:
         auc_score = 0.5
-    #print("Y_encoded") [[1 0 0 ... 0 0 0][0 1 0 ... 0 0 0]]
-    #print(Y_pred_proba) [[0.1322108  0.01       0.0295151  ... 0.005      0.         0.015     ][0.16297093 0.02       0.00693374 ... 0.02       0.01       0.015     ]
+    # print("Y_encoded") [[1 0 0 ... 0 0 0][0 1 0 ... 0 0 0]]
+    # print(Y_pred_proba) [[0.1322108  0.01       0.0295151  ... 0.005      0.         0.015     ][0.16297093 0.02       0.00693374 ... 0.02       0.01       0.015     ]
     # print("Y_pred_proba_list")
     # print(Y_pred_proba_list) # array([[1.        , 0.        ],[1.        , 0.        ],[0.995     , 0.005     ],...,[0.98058876, 0.01941124]], shape=(872, 2)), array([[0.995     , 0.005     ],
     # chaque array est une espace et et à lintereieur c'est des segment y en 872

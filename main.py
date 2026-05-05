@@ -11,22 +11,26 @@ import os
 import pandas as pd
 
 
+SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
 OUTPUT_BASE_PATH = "outputs/" # "/kaggle/working/"
+
+
+
 
 def ensure_output_dir(rest_path):
     os.makedirs(OUTPUT_BASE_PATH + rest_path, exist_ok=True)
 
 
-def test_model(name):
+def test_model(name, X_train, X_test, Y_train, Y_test):
     best_model, best_params, best_score, results = None, None, None, None
     if name == "logistic_regression":
-        best_model, best_params, best_score, results = logistic_regression_model_tests()
+        best_model, best_params, best_score, results = logistic_regression_model_tests(X_train, X_test, Y_train, Y_test)
     elif name == "svm":
-        best_model, best_params, best_score, results = svm_model_tests()
+        best_model, best_params, best_score, results = svm_model_tests(X_train, X_test, Y_train, Y_test)
     elif name == "random_forest":
-        best_model, best_params, best_score, results = randomForest_model_tests()
+        best_model, best_params, best_score, results = randomForest_model_tests(X_train, X_test, Y_train, Y_test)
     elif name == "xgboost":
-        best_model, best_params, best_score, results = xboost_model_tests()
+        best_model, best_params, best_score, results = xboost_model_tests(X_train, X_test, Y_train, Y_test)
     else:
         print(f"Unknown model name: {name}")
         return None, None, None, None
@@ -75,6 +79,21 @@ def main():
     print("Score :", score)
 
 def test_models(model_names):
+    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
+    print(f"Loaded X_array shape: {X_array.shape}")
+
+    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
+    print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
+
+    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
+    print(f"Loaded groups shape: {groups.shape}")
+
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
+
+    X_train, X_test = X_array[train_idx], X_array[test_idx]
+    Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
+
     start = time.time()
     test_start = None
     test_end = None
@@ -84,7 +103,7 @@ def test_models(model_names):
     for model_name in model_names:
         print(f"\n\n=== Testing {model_name.replace('_', ' ').title()} ===")
         test_start = time.time()
-        test_model(model_name)
+        test_model(model_name, X_train, X_test, Y_train, Y_test)
         test_end = time.time()
         model_time = test_end - test_start
         print(f"Time taken for {model_name}: {model_time:.2f}s")

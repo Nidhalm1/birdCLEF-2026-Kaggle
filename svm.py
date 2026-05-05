@@ -13,21 +13,27 @@ def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale", m
     print("\n/// SVM Model ///")
     print(f"Parameters: C={C}, gamma={gamma}, max_iter={max_iter}")
 
-    if X_array is None:
+    array_encoded_group_exists = X_array and not None or Y_encoded and not None or groups and not None
+    splits_exist = X_train and not None or X_test and not None or Y_train and not None or Y_test and not None
+
+    if (array_encoded_group_exists) and not(splits_exist):
         X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
         print(f"Loaded X_array shape: {X_array.shape}")
-    if Y_encoded is None:
+
         Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
         print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
-    if groups is None:
+
         groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
         print(f"Loaded groups shape: {groups.shape}")
 
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-    train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
+        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+        train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
 
-    X_train, X_test = X_array[train_idx], X_array[test_idx]
-    Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
+        X_train, X_test = X_array[train_idx], X_array[test_idx]
+        Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
+    else:
+        print("Either the data or the split data should be given")
+        raise ValueError
 
 
     scaler = StandardScaler()
