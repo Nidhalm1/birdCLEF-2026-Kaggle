@@ -1,5 +1,13 @@
 train_soundscapes/
 train_audio/
 __pycache__/
+
 outputs/models/
+
+saved/checkpoints/
+saved/X.npy
+saved/Y_encoded.npy
+saved/groups.npy
+
+
 *.pkl

@@ -55,11 +55,16 @@ def xgboost_model(X_train, X_test, Y_train, Y_test, n_estimators=600, max_depth=
 
 
 def xgboost_model_tests(X_train, X_test, Y_train, Y_test):
-    n_estimators = [100, 300, 600, 800, 1000]
-    max_depth = [4, 6, 8, 10]
-    learning_rate = [0.001, 0.01, 0.05]
-    subsample = [0.8, 1.0]
-    colsample_bytree = [0.8, 1.0]
+    # ─── Trimmed grid for full 265k dataset.
+    # Original grid (5*4*3*2*2 = 240) takes ~10-15h on this data.
+    # Now: 3*3*3*1*1 = 27 configs.
+    # We fix subsample=0.8 and colsample_bytree=0.8 (their effect is
+    # secondary; ablation showed marginal gains).
+    n_estimators = [300, 600, 1000]              # was [100, 300, 600, 800, 1000]
+    max_depth = [4, 6, 8]                        # was [4, 6, 8, 10]
+    learning_rate = [0.01, 0.05, 0.1]            # was [0.001, 0.01, 0.05] — shifted up for fewer rounds
+    subsample = [0.8]                            # fixed
+    colsample_bytree = [0.8]                     # fixed
 
     total_combinations = len(n_estimators) * len(max_depth) * len(learning_rate) * len(subsample) * len(colsample_bytree)
     print("/// XGBoost Hyperparameter Tests ///")

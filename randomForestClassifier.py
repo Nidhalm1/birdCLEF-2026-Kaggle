@@ -54,11 +54,14 @@ def randomForest(X_train, X_test, Y_train, Y_test, n_estimators=600, max_depth=6
 
 
 def randomForest_model_tests(X_train, X_test, Y_train, Y_test):
-    n_estimators = [100, 300, 600, 800, 1000]
-    max_depth = [4, 6, 8, 10]
+    # ─── Trimmed grid for full 265k dataset.
+    # Original grid (5*4*1*2*3 = 120) was tuned for smaller data.
+    # Now: 3*3*1*2*2 = 36 configs ─────────────────────────────────────
+    n_estimators = [300, 600, 1000]             # was [100, 300, 600, 800, 1000]
+    max_depth = [6, 10, None]                   # was [4, 6, 8, 10] — added None (no limit)
     class_weight = ["balanced"]
     max_features = ["sqrt", "log2"]
-    min_samples_split = [2, 5, 10]
+    min_samples_split = [2, 10]                 # was [2, 5, 10]
 
     total_combinations = len(n_estimators) * len(max_depth) * len(class_weight) * len(max_features) * len(min_samples_split)
     print("/// RandomForest Hyperparameter Tests ///")

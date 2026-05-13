@@ -34,7 +34,7 @@ from audioCharge import (
 from paths import OUTPUT_BASE_PATH, CSV_PATH, AUDIO_PARENT
 
 OUTPUT_PATH     = os.path.join(OUTPUT_BASE_PATH, "ablation/")
-MAX_FILES       = 35550        # increase for a real run
+MAX_FILES       = 5000        # increase for a real run
 LR_PARAMS       = {"C": 0.01, "max_iter": 10000}   # best from your grid search
 
 
