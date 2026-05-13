@@ -1,38 +1,11 @@
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 import numpy as np
 import time
-import pandas as pd
 
-SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
-
-def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, max_depth=6, class_weight="balanced", max_features="sqrt", min_samples_split=2):
+def randomForest(X_train, X_test, Y_train, Y_test, n_estimators=600, max_depth=6, class_weight="balanced", max_features="sqrt", min_samples_split=2):
     print("\n/// RandomForest Model ///")
     print(f"Parameters: n_estimators={n_estimators}, max_depth={max_depth}, class_weight={class_weight}, max_features={max_features}, min_samples_split={min_samples_split}")
-    
-    array_encoded_group_exists = X_array and not None or Y_encoded and not None or groups and not None
-    splits_exist = X_train and not None or X_test and not None or Y_train and not None or Y_test and not None
-
-    if (array_encoded_group_exists) and not(splits_exist):
-        X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-        print(f"Loaded X_array shape: {X_array.shape}")
-
-        Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-        print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
-
-        groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
-        print(f"Loaded groups shape: {groups.shape}")
-
-        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-        train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
-
-        X_train, X_test = X_array[train_idx], X_array[test_idx]
-        Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
-    else:
-        print("Either the data or the split data should be given")
-        raise ValueError
-    
 
     model = RandomForestClassifier(
         n_estimators=n_estimators,
@@ -80,7 +53,7 @@ def randomForest(X_array=None, Y_encoded=None, groups=None, n_estimators=600, ma
     return model, auc_score, X_test, Y_test
 
 
-def randomForest_model_tests():
+def randomForest_model_tests(X_train, X_test, Y_train, Y_test):
     n_estimators = [100, 300, 600, 800, 1000]
     max_depth = [4, 6, 8, 10]
     class_weight = ["balanced"]
@@ -100,11 +73,6 @@ def randomForest_model_tests():
     best_params = {}
 
     print("Starting RandomForest hyperparameter tests...")
-    print("loading data...")
-
-    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for n in n_estimators:
         for d in max_depth:
@@ -119,9 +87,7 @@ def randomForest_model_tests():
                         start_time = time.time()
 
                         model, score, _, _ = randomForest(
-                            X_array=X_array,
-                            Y_encoded=Y_encoded,
-                            groups=groups,
+                            X_train, X_test, Y_train, Y_test,
                             n_estimators=n,
                             max_depth=d,
                             class_weight=cw,

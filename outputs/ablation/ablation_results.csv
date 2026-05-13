@@ -1,0 +1,9 @@
+config,features,feature_dim,auc_score,time_sec
+mfcc_only,mfcc,26,1.0,7.22
+mfcc+deltas,"mfcc, mfcc_delta, mfcc_delta2",78,1.0,5.59
+mfcc+deltas+spectral,"mfcc, mfcc_delta, mfcc_delta2, spectral_centroid, spectral_bandwidth, spectral_rolloff, zcr",86,0.9375,11.44
++ chroma,"mfcc, mfcc_delta, mfcc_delta2, spectral_centroid, spectral_bandwidth, spectral_rolloff, zcr, chroma",110,1.0,11.38
++ spectral_contrast,"mfcc, mfcc_delta, mfcc_delta2, spectral_centroid, spectral_bandwidth, spectral_rolloff, zcr, chroma, spectral_contrast",124,1.0,7.86
++ rms,"mfcc, mfcc_delta, mfcc_delta2, spectral_centroid, spectral_bandwidth, spectral_rolloff, zcr, chroma, spectral_contrast, rms",126,1.0,10.45
++ tonnetz,"mfcc, mfcc_delta, mfcc_delta2, spectral_centroid, spectral_bandwidth, spectral_rolloff, zcr, chroma, spectral_contrast, rms, tonnetz",138,1.0,18.33
+all_features (+ mel),"mfcc, mfcc_delta, mfcc_delta2, chroma, mel, spectral_centroid, spectral_bandwidth, spectral_rolloff, spectral_contrast, zcr, rms, tonnetz",394,0.9583333333333334,18.22

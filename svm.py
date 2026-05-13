@@ -1,40 +1,14 @@
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import SVC
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import time
 
-SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
-
-def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale", max_iter=1000):
+def svm_model(X_train, X_test, Y_train, Y_test, C=1.0, gamma="scale", max_iter=1000):
 
     print("\n/// SVM Model ///")
     print(f"Parameters: C={C}, gamma={gamma}, max_iter={max_iter}")
-
-    array_encoded_group_exists = X_array and not None or Y_encoded and not None or groups and not None
-    splits_exist = X_train and not None or X_test and not None or Y_train and not None or Y_test and not None
-
-    if (array_encoded_group_exists) and not(splits_exist):
-        X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-        print(f"Loaded X_array shape: {X_array.shape}")
-
-        Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-        print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
-
-        groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
-        print(f"Loaded groups shape: {groups.shape}")
-
-        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-        train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
-
-        X_train, X_test = X_array[train_idx], X_array[test_idx]
-        Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
-    else:
-        print("Either the data or the split data should be given")
-        raise ValueError
-
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
@@ -71,7 +45,7 @@ def svm_model(X_array=None, Y_encoded=None, groups=None, C=1.0, gamma="scale", m
     return model, auc_score, X_test, Y_test
 
 
-def svm_model_tests():
+def svm_model_tests(X_train, X_test, Y_train, Y_test):
     C_values = [0.001, 0.01, 0.1, 1.0, 10.0]
     gamma_values = ["scale", 0.01, 0.1]
     max_iter_values = [500, 1000, 5000, 10000]
@@ -89,11 +63,6 @@ def svm_model_tests():
     best_params = {}
 
     print("Starting SVM hyperparameter tests...")
-    print("loading data...")
-
-    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for C in C_values:
         for gamma in gamma_values:
@@ -106,9 +75,7 @@ def svm_model_tests():
                 start_time = time.time()
 
                 model, score, _, _ = svm_model(
-                    X_array=X_array,
-                    Y_encoded=Y_encoded,
-                    groups=groups,
+                    X_train, X_test, Y_train, Y_test,
                     C=C,
                     gamma=gamma,
                     max_iter=max_iter

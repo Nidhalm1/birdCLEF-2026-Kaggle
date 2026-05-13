@@ -1,37 +1,12 @@
 import numpy as np
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import roc_auc_score
 from sklearn.multioutput import MultiOutputClassifier
 from xgboost import XGBClassifier
 import time
 
-SAVED_BASE_PATH = "saved/" # "/kaggle/input/datasets/emirhansagir/projmlsaved/saved/"
-
-def xgboost_model(X_array=None, Y_encoded=None, groups=None, n_estimators=600, max_depth=6, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8):
+def xgboost_model(X_train, X_test, Y_train, Y_test, n_estimators=600, max_depth=6, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8):
     print("\n/// XGBoost Model ///")
     print(f"Parameters: n_estimators={n_estimators}, max_depth={max_depth}, learning_rate={learning_rate}, subsample={subsample}, colsample_bytree={colsample_bytree}")
-    
-    array_encoded_group_exists = X_array and not None or Y_encoded and not None or groups and not None
-    splits_exist = X_train and not None or X_test and not None or Y_train and not None or Y_test and not None
-
-    if (array_encoded_group_exists) and not(splits_exist):
-        X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-        print(f"Loaded X_array shape: {X_array.shape}")
-
-        Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-        print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
-
-        groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
-        print(f"Loaded groups shape: {groups.shape}")
-
-        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-        train_idx, test_idx = next(gss.split(X_array, Y_encoded, groups))
-
-        X_train, X_test = X_array[train_idx], X_array[test_idx]
-        Y_train, Y_test = Y_encoded[train_idx], Y_encoded[test_idx]
-    else:
-        print("Either the data or the split data should be given")
-        raise ValueError
 
     # Base XGBoost model
     base_model = XGBClassifier(
@@ -79,7 +54,7 @@ def xgboost_model(X_array=None, Y_encoded=None, groups=None, n_estimators=600, m
     return model, auc_score, X_test, Y_test
 
 
-def xboost_model_tests():
+def xboost_model_tests(X_train, X_test, Y_train, Y_test):
     n_estimators = [100, 300, 600, 800, 1000]
     max_depth = [4, 6, 8, 10]
     learning_rate = [0.001, 0.01, 0.05]
@@ -99,11 +74,6 @@ def xboost_model_tests():
     best_params = {}
 
     print("Starting XGBoost hyperparameter tests...")
-    print("loading data...")
-
-    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
-    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
-    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
 
     for n in n_estimators:
         for d in max_depth:
@@ -118,9 +88,7 @@ def xboost_model_tests():
                         start_time = time.time()
 
                         model, score, _, _ = xgboost_model(
-                            X_array=X_array,
-                            Y_encoded=Y_encoded,
-                            groups=groups,
+                            X_train, X_test, Y_train, Y_test,
                             n_estimators=n,
                             max_depth=d,
                             learning_rate=lr,

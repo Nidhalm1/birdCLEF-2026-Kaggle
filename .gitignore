@@ -1,0 +1,5 @@
+train_soundscapes/
+train_audio/
+__pycache__/
+outputs/models/
+*.pkl
