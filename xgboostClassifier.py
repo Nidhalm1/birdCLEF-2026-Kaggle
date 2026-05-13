@@ -54,7 +54,7 @@ def xgboost_model(X_train, X_test, Y_train, Y_test, n_estimators=600, max_depth=
     return model, auc_score, X_test, Y_test
 
 
-def xboost_model_tests(X_train, X_test, Y_train, Y_test):
+def xgboost_model_tests(X_train, X_test, Y_train, Y_test):
     n_estimators = [100, 300, 600, 800, 1000]
     max_depth = [4, 6, 8, 10]
     learning_rate = [0.001, 0.01, 0.05]

@@ -1,10 +1,17 @@
 import os
+import warnings
 import librosa
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
-from paths import SAVED_BASE_PATH, CSV_PATH, AUDIO_PARENT
+# Silence librosa's noisy warnings (empty frequency set, pysoundfile fallback, etc.)
+warnings.filterwarnings("ignore", category=UserWarning,   module="librosa")
+warnings.filterwarnings("ignore", category=FutureWarning, module="librosa")
+
+from paths import SAVED_BASE_PATH, SAVED_OUTPUT_PATH, CSV_PATH, AUDIO_PARENT
 
 
 # ─────────────────────────────────────────────
@@ -126,67 +133,134 @@ def extract_features(audio, sr, start_sec, duration=5, config=None):
 
     return np.concatenate(parts)
 
-    
+
+# ─────────────────────────────────────────────
+#  PER-FILE WORKER (top-level so joblib can pickle it)
+# ─────────────────────────────────────────────
+def _process_one_file_principal(row, parent, config):
+    """Process one row of train.csv. Returns (X_list, Y_list, groups_list) or None on failure."""
+    full_path = os.path.join(parent, row["filename"])
+    try:
+        audio, sr = librosa.load(full_path, sr=32000)
+    except Exception as e:
+        return None, str(e)
+
+    duration_ttl = len(audio) / sr
+    X, Y, groups = [], [], []
+    i = 0
+    while i < duration_ttl:
+        features = extract_features(audio=audio, sr=sr, start_sec=int(i), config=config)
+        X.append(features)
+        Y.append([row["primary_label"]])
+        groups.append(row["filename"])
+        i += 5
+    return (X, Y, groups), None
 
 
-def build_dataset(csv, parent , maxIter= 100, config=None):
+def _process_one_file_grouped(filename, grouped, parent, config):
+    """Process one (filename, group) from train_soundscapes_labels.csv."""
+    full_path = os.path.join(parent, filename)
+    try:
+        audio, sr = librosa.load(full_path, sr=32000)
+    except Exception as e:
+        return None, str(e)
+
+    X, Y, groups = [], [], []
+    for _, row in grouped.iterrows():
+        start_sec = int(row["start"].split(":")[-1])
+        features = extract_features(audio=audio, sr=sr, start_sec=start_sec, config=config)
+        labels = (row["primary_label"]).split(';')
+        X.append(features)
+        Y.append(labels)
+        groups.append(filename)
+    return (X, Y, groups), None
+
+
+# ─────────────────────────────────────────────
+#  DATASET BUILDERS — PARALLELIZED
+# ─────────────────────────────────────────────
+def build_dataset(csv, parent, maxIter=100, config=None, n_jobs=-1):
+    """Build dataset from train_soundscapes_labels.csv (segmented files). Parallelized."""
     df = pd.read_csv(csv)
-    res = df.groupby("filename")
-    X = []
-    Y = []
-    groups = []  # NOUVEAU : On crée une liste pour stocker le nom du fichier source
-    count = 0
-    for filename, grouped in res:
-        if count >=maxIter:
-            break
-        full_path = os.path.join(parent,filename)
-        try:
-            audio, sr = librosa.load(full_path, sr=32000)
-        except:
-            continue
-        for _ , row in grouped.iterrows():
-            start_sec = int(row['start'].split(":")[-1])            
-            features = extract_features(audio= audio, sr = sr,start_sec=start_sec, config=config)
-            labels = (row["primary_label"]).split(';')
-            X.append(features)
-            Y.append(labels)
-            groups.append(filename)
-        count+=1
-    return X,Y, groups
-
-
-def build_dataset_principal(csv, parent , maxIter= 100, config=None):
-    df = pd.read_csv(csv)
+    grouped_iter = list(df.groupby("filename"))[:maxIter]
     print(f"parent: {parent}, csv: {csv}")
-    X = []
-    Y = []
-    groups = []  # NOUVEAU : On crée une liste pour stocker le nom du fichier source
-    n_loaded = 0
-    n_failed = 0
-    for _ , row in df.iterrows():
-        full_path = os.path.join(parent,row["filename"])
-        try:
-            audio, sr = librosa.load(full_path, sr=32000)
-            n_loaded += 1
-        except Exception as e:
-            n_failed += 1
-            if n_failed <= 5:   # print first 5 errors only, then stay silent
-                print(f"Erreur fichier {full_path}: {e}")
-            continue
-        duration_ttl = len(audio)/sr
-        i = 0
-        while i < duration_ttl:
-            features = extract_features(audio= audio, sr =sr,start_sec=int(i), config=config)
-            X.append(features)
-            Y.append([row["primary_label"]])
-            groups.append(row["filename"])
-            i+=5
-        maxIter-=1
-        if maxIter == 0 : 
-            break
+    print(f"Processing {len(grouped_iter)} files in parallel with n_jobs={n_jobs} ...")
 
+    results = Parallel(n_jobs=n_jobs, backend="loky")(
+        delayed(_process_one_file_grouped)(fn, grp, parent, config)
+        for fn, grp in tqdm(grouped_iter, desc="Extracting features", unit="file")
+    )
+
+    X, Y, groups = [], [], []
+    n_loaded = n_failed = 0
+    sample_errors = []
+    for result, err in results:
+        if result is None:
+            n_failed += 1
+            if len(sample_errors) < 5:
+                sample_errors.append(err)
+        else:
+            n_loaded += 1
+            X.extend(result[0]); Y.extend(result[1]); groups.extend(result[2])
+
+    for e in sample_errors:
+        print(f"Erreur exemple: {e}")
     print(f"Loaded {n_loaded} files OK, {n_failed} failed.")
-    return X, Y , groups
+    return X, Y, groups
+
+
+def build_dataset_principal(csv, parent, maxIter=100, config=None, n_jobs=-1,
+                             checkpoint_dir=None, batch_size=2000):
+    """Build dataset from train.csv (continuous recordings, 5-sec windows).
+    Parallelized with checkpointing: saves intermediate results every `batch_size`
+    files so a crash near the end doesn't lose all progress.
+    """
+    df = pd.read_csv(csv)
+    df = df.head(maxIter).reset_index(drop=True)
+    print(f"parent: {parent}, csv: {csv}")
+    print(f"Processing {len(df)} files in parallel with n_jobs={n_jobs} ...")
+    print(f"Checkpoint every {batch_size} files → {checkpoint_dir or 'no checkpoints'}")
+
+    if checkpoint_dir:
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+    X_all, Y_all, groups_all = [], [], []
+    n_loaded = n_failed = 0
+    sample_errors = []
+    n_batches = (len(df) + batch_size - 1) // batch_size
+
+    for b in range(n_batches):
+        start = b * batch_size
+        end   = min(start + batch_size, len(df))
+        batch_rows = [df.iloc[i] for i in range(start, end)]
+
+        print(f"\n--- Batch {b+1}/{n_batches}  (rows {start}..{end-1}) ---")
+        results = Parallel(n_jobs=n_jobs, backend="loky")(
+            delayed(_process_one_file_principal)(row, parent, config)
+            for row in tqdm(batch_rows, desc=f"Batch {b+1}/{n_batches}", unit="file")
+        )
+
+        for result, err in results:
+            if result is None:
+                n_failed += 1
+                if len(sample_errors) < 5:
+                    sample_errors.append(err)
+            else:
+                n_loaded += 1
+                X_all.extend(result[0]); Y_all.extend(result[1]); groups_all.extend(result[2])
+
+        # ── Checkpoint: save partial X/Y/groups after each batch ────────
+        if checkpoint_dir:
+            np.save(os.path.join(checkpoint_dir, "X_partial.npy"),      np.array(X_all))
+            np.save(os.path.join(checkpoint_dir, "Y_partial.npy"),      np.array(Y_all, dtype=object))
+            np.save(os.path.join(checkpoint_dir, "groups_partial.npy"), np.array(groups_all))
+            print(f"  Checkpoint saved: {len(X_all)} segments so far "
+                  f"(loaded {n_loaded}, failed {n_failed})")
+
+    for e in sample_errors:
+        print(f"Erreur exemple: {e}")
+    print(f"\nLoaded {n_loaded} files OK, {n_failed} failed.")
+    return X_all, Y_all, groups_all
 
 
 # ─────────────────────────────────────────────
@@ -194,20 +268,29 @@ def build_dataset_principal(csv, parent , maxIter= 100, config=None):
 #  Run this file directly to (re)build saved/X.npy etc.
 #  Uses DEFAULT_FEATURE_CONFIG (= all features ON).
 # ─────────────────────────────────────────────
-def build_and_save(csv_path=None, parent=None, maxIter=200, save_path=None, config=None):
+def build_and_save(csv_path=None, parent=None, maxIter=200, save_path=None, config=None,
+                    n_jobs=-1, batch_size=2000):
     if csv_path is None:
         csv_path = CSV_PATH
     if parent is None:
         parent = AUDIO_PARENT
     if save_path is None:
-        save_path = SAVED_BASE_PATH
+        # use SAVED_OUTPUT_PATH (writable) — not SAVED_BASE_PATH (may be read-only)
+        save_path = SAVED_OUTPUT_PATH
     if config is None:
         config = DEFAULT_FEATURE_CONFIG
 
     print(f"Building dataset from {csv_path} ...")
     print(f"Feature dim (expected): {feature_dim(config)}")
+    print(f"Writing outputs to: {save_path}")
 
-    X, Y, groups = build_dataset_principal(csv_path, parent=parent, maxIter=maxIter, config=config)
+    # Checkpoints go in save_path/checkpoints/
+    checkpoint_dir = os.path.join(save_path, "checkpoints")
+
+    X, Y, groups = build_dataset_principal(
+        csv_path, parent=parent, maxIter=maxIter, config=config,
+        n_jobs=n_jobs, checkpoint_dir=checkpoint_dir, batch_size=batch_size,
+    )
 
     print(f"Built {len(X)} segments from {len(set(groups))} files")
 
@@ -232,5 +315,8 @@ def build_and_save(csv_path=None, parent=None, maxIter=200, save_path=None, conf
 
 
 if __name__ == "__main__":
+    # n_jobs=-1  → use all logical cores
+    # n_jobs=N   → use N workers (e.g. 4 on Kaggle)
+    # batch_size: checkpoint every N files (so a crash near the end doesn't lose all work)
     # Edit maxIter as needed (number of audio files to process)
-    build_and_save(maxIter=35550)
+    build_and_save(maxIter=35550, n_jobs=-1, batch_size=2000)

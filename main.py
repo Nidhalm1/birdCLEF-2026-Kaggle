@@ -1,7 +1,7 @@
 from logisticRegression import logistic_regression_model_tests
 from svm import svm_model_tests
 from randomForestClassifier import randomForest_model_tests
-from xgboostClassifier import xgboost_model, xboost_model_tests
+from xgboostClassifier import xgboost_model_tests
 from audioCharge import *
 from visualize import plot_results
 
@@ -12,13 +12,32 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
 
-from paths import SAVED_BASE_PATH, OUTPUT_BASE_PATH
+from paths import SAVED_BASE_PATH, SAVED_OUTPUT_PATH, OUTPUT_BASE_PATH
 
 
 
 
 def ensure_output_dir(rest_path):
     os.makedirs(OUTPUT_BASE_PATH + rest_path, exist_ok=True)
+
+
+def resolve_saved_path():
+    """Pick the saved/ directory to load from.
+    Prefer SAVED_OUTPUT_PATH (freshly built), fall back to SAVED_BASE_PATH (pre-saved).
+    """
+    candidate1 = SAVED_OUTPUT_PATH
+    candidate2 = SAVED_BASE_PATH
+    if os.path.exists(os.path.join(candidate1, "X.npy")):
+        print(f"Loading from SAVED_OUTPUT_PATH: {candidate1}")
+        return candidate1
+    elif os.path.exists(os.path.join(candidate2, "X.npy")):
+        print(f"Loading from SAVED_BASE_PATH: {candidate2}")
+        return candidate2
+    else:
+        raise FileNotFoundError(
+            f"X.npy not found in either {candidate1} or {candidate2}. "
+            f"Run audioCharge.py first to build the dataset."
+        )
 
 
 def test_model(name, X_train, X_test, Y_train, Y_test):
@@ -30,7 +49,7 @@ def test_model(name, X_train, X_test, Y_train, Y_test):
     elif name == "random_forest":
         best_model, best_params, best_score, results = randomForest_model_tests(X_train, X_test, Y_train, Y_test)
     elif name == "xgboost":
-        best_model, best_params, best_score, results = xboost_model_tests(X_train, X_test, Y_train, Y_test)
+        best_model, best_params, best_score, results = xgboost_model_tests(X_train, X_test, Y_train, Y_test)
     else:
         print(f"Unknown model name: {name}")
         return None, None, None, None
@@ -38,7 +57,7 @@ def test_model(name, X_train, X_test, Y_train, Y_test):
     print(f"Best {name.capitalize()} Parameters:", best_params)
     print(f"Best {name.capitalize()} Score:", best_score)
 
-    
+
     # Convert to DataFrame
     df = pd.DataFrame(results)
 
@@ -61,13 +80,15 @@ def test_model(name, X_train, X_test, Y_train, Y_test):
 
 
 def test_models(model_names):
-    X_array = np.load(SAVED_BASE_PATH + "X.npy", allow_pickle=True)
+    saved_path = resolve_saved_path()
+
+    X_array = np.load(os.path.join(saved_path, "X.npy"), allow_pickle=True)
     print(f"Loaded X_array shape: {X_array.shape}")
 
-    Y_encoded = np.load(SAVED_BASE_PATH + "Y_encoded.npy", allow_pickle=True)
+    Y_encoded = np.load(os.path.join(saved_path, "Y_encoded.npy"), allow_pickle=True)
     print(f"Loaded Y_encoded shape: {Y_encoded.shape}")
 
-    groups = np.load(SAVED_BASE_PATH + "groups.npy", allow_pickle=True)
+    groups = np.load(os.path.join(saved_path, "groups.npy"), allow_pickle=True)
     print(f"Loaded groups shape: {groups.shape}")
 
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
@@ -90,7 +111,7 @@ def test_models(model_names):
         model_time = test_end - test_start
         print(f"Time taken for {model_name}: {model_time:.2f}s")
         times.append(model_time)
-    
+
     end = time.time()
     print(f"Total time taken: {end - start:.2f}s")
     print("Individual model times:")
