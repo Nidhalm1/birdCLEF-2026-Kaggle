@@ -11,7 +11,11 @@ Usage:
 Output:
     outputs/ablation/ablation_results.csv
     outputs/ablation/ablation_plot.png
+    outputs/logs/ablation_<timestamp>.log
 """
+
+from logger import setup_logging, log_section, close_logging
+setup_logging("ablation")
 
 import os
 import time
@@ -137,8 +141,7 @@ def run_ablation():
     for group_name, enabled_keys in FEATURE_GROUPS:
         config = make_config(enabled_keys)
         dim    = feature_dim(config)
-        print(f"\n\n----------------------------------------")
-        print(f"Config: {group_name}  |  dim={dim}")
+        log_section(f"Config: {group_name}  |  dim={dim}")
         print(f"Features: {enabled_keys}")
 
         t0 = time.time()
@@ -179,11 +182,14 @@ def run_ablation():
     plt.close()
     print(f"Saved plot: {plot_out}")
 
-    print("\n=== ABLATION SUMMARY ===")
+    log_section("ABLATION SUMMARY")
     print(df[["config", "feature_dim", "auc_score"]].to_string(index=False))
 
     return df
 
 
 if __name__ == "__main__":
-    run_ablation()
+    try:
+        run_ablation()
+    finally:
+        close_logging()

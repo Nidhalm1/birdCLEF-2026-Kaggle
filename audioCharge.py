@@ -315,8 +315,13 @@ def build_and_save(csv_path=None, parent=None, maxIter=200, save_path=None, conf
 
 
 if __name__ == "__main__":
-    # n_jobs=-1  → use all logical cores
-    # n_jobs=N   → use N workers (e.g. 4 on Kaggle)
-    # batch_size: checkpoint every N files (so a crash near the end doesn't lose all work)
-    # Edit maxIter as needed (number of audio files to process)
-    build_and_save(maxIter=35550, n_jobs=-1, batch_size=2000)
+    from logger import setup_logging, close_logging
+    setup_logging("audioCharge")
+    try:
+        # n_jobs=-1  → use all logical cores
+        # n_jobs=N   → use N workers (e.g. 4 on Kaggle)
+        # batch_size: checkpoint every N files (so a crash near the end doesn't lose all work)
+        # Edit maxIter as needed (number of audio files to process)
+        build_and_save(maxIter=35550, n_jobs=-1, batch_size=2000)
+    finally:
+        close_logging()
