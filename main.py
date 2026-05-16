@@ -126,7 +126,7 @@ def test_models(model_names):
 
 if __name__ == "__main__":
     try:
-        test_models(["logistic_regression", "svm", "random_forest", "xgboost"])
+        test_models(["random_forest", "xgboost"]) # "logistic_regression", "svm", "random_forest", "xgboost"])
         log_section("Generating Plots")
         plot_results()
     finally:

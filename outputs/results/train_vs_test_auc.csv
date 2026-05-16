@@ -1,0 +1,5 @@
+model,train_auc,test_auc,gap
+Logistic Regression,0.9288,0.867,-0.0618
+SVM,0.9898,0.832,-0.1578
+Random Forest,0.9511,0.8168,-0.1343
+XGBoost,0.9927,0.8979,-0.0948
